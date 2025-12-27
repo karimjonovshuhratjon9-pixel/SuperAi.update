@@ -1,0 +1,8 @@
+{
+  "name": "SuperAI - Next Gen Assistant",
+  "description": "A high-performance AI assistant supporting text, images, audio, and real-time voice interaction in Uzbek, Russian, and English.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
