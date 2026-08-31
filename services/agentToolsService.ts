@@ -23,7 +23,8 @@ export const setTelegramConfig = (botToken: string, chatId: string) => {
 export const AVAILABLE_TOOLS = [
   {
     name: "web_search",
-    description: "Internetdan yangi ma'lumotlar, yangiliklar yoki faktlar qidirish",
+    description:
+      "Internetdan yangi ma'lumotlar, yangiliklar yoki faktlar qidirish",
     parameters: { query: "qidiruv so'zi yoki savol" },
   },
   {
@@ -48,17 +49,21 @@ export const AVAILABLE_TOOLS = [
   },
   {
     name: "execute_code",
-    description: "JavaScript / hisoblash kodini xavfsiz sandboxda ishga tushirish",
+    description:
+      "JavaScript / hisoblash kodini xavfsiz sandboxda ishga tushirish",
     parameters: { code: "javascript kodi" },
   },
 ];
 
-export async function sendTelegramMessage(text: string): Promise<{ success: boolean; message: string }> {
+export async function sendTelegramMessage(
+  text: string,
+): Promise<{ success: boolean; message: string }> {
   const { botToken, chatId } = getTelegramConfig();
   if (!botToken || !chatId) {
     return {
       success: false,
-      message: "Telegram Bot Token yoki Chat ID sozlanmagan. Iltimos, Sozlamalar -> Integratsiyalardan kiriting.",
+      message:
+        "Telegram Bot Token yoki Chat ID sozlanmagan. Iltimos, Sozlamalar -> Integratsiyalardan kiriting.",
     };
   }
 
@@ -75,9 +80,15 @@ export async function sendTelegramMessage(text: string): Promise<{ success: bool
     });
     const data = await res.json();
     if (data.ok) {
-      return { success: true, message: "Xabar Telegram ga muvaffaqiyatli yuborildi! 🚀" };
+      return {
+        success: true,
+        message: "Xabar Telegram ga muvaffaqiyatli yuborildi! 🚀",
+      };
     } else {
-      return { success: false, message: `Telegram xatosi: ${data.description || res.statusText}` };
+      return {
+        success: false,
+        message: `Telegram xatosi: ${data.description || res.statusText}`,
+      };
     }
   } catch (err: any) {
     return { success: false, message: `Telegram xatolik: ${err.message}` };
@@ -87,7 +98,7 @@ export async function sendTelegramMessage(text: string): Promise<{ success: bool
 export async function fetchWeather(city: string): Promise<any> {
   try {
     const geoRes = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=uz&format=json`
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=uz&format=json`,
     );
     const geoData = await geoRes.json();
     if (!geoData.results || geoData.results.length === 0) {
@@ -95,7 +106,7 @@ export async function fetchWeather(city: string): Promise<any> {
     }
     const { latitude, longitude, name, country } = geoData.results[0];
     const weatherRes = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m`
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m`,
     );
     const weatherData = await weatherRes.json();
     const current = weatherData.current;
@@ -112,18 +123,27 @@ export async function fetchWeather(city: string): Promise<any> {
   }
 }
 
-export function evaluateMath(expression: string): { success: boolean; result?: number | string; error?: string } {
+export function evaluateMath(expression: string): {
+  success: boolean;
+  result?: number | string;
+  error?: string;
+} {
   try {
     const sanitized = expression.replace(/[^0-9+\-*/().%^eEpiPI ]/g, "");
     // eslint-disable-next-line no-new-func
-    const evaluated = Function(`"use strict"; return (${sanitized.replace(/pi/gi, "Math.PI")});`)();
+    const evaluated = Function(
+      `"use strict"; return (${sanitized.replace(/pi/gi, "Math.PI")});`,
+    )();
     return { success: true, result: evaluated };
   } catch (e: any) {
     return { success: false, error: "Hisoblashda xatolik: " + e.message };
   }
 }
 
-export async function executeAgentAction(toolCall: { toolName: string; params: Record<string, any> }): Promise<any> {
+export async function executeAgentAction(toolCall: {
+  toolName: string;
+  params: Record<string, any>;
+}): Promise<any> {
   switch (toolCall.toolName) {
     case "web_search":
       return await performWebSearch(toolCall.params.query || "");
@@ -146,7 +166,14 @@ export async function executeAgentAction(toolCall: { toolName: string; params: R
       try {
         const logs: string[] = [];
         const customConsole = {
-          log: (...args: any[]) => logs.push(args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ")),
+          log: (...args: any[]) =>
+            logs.push(
+              args
+                .map((a) =>
+                  typeof a === "object" ? JSON.stringify(a) : String(a),
+                )
+                .join(" "),
+            ),
           error: (...args: any[]) => logs.push("[ERROR] " + args.join(" ")),
           warn: (...args: any[]) => logs.push("[WARN] " + args.join(" ")),
         };
@@ -155,7 +182,11 @@ export async function executeAgentAction(toolCall: { toolName: string; params: R
         const output = fn(customConsole);
         return {
           success: true,
-          logs: logs.length ? logs.join("\n") : (output !== undefined ? String(output) : "Muvaffaqiyatli bajarildi (hech qanday console.log chiqmadi)."),
+          logs: logs.length
+            ? logs.join("\n")
+            : output !== undefined
+              ? String(output)
+              : "Muvaffaqiyatli bajarildi (hech qanday console.log chiqmadi).",
         };
       } catch (err: any) {
         return { success: false, error: err.message };
