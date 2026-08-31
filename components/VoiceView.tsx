@@ -1,215 +1,456 @@
+import React, { useState, useEffect, useRef } from "react";
+import { SYSTEM_INSTRUCTION } from "../constants";
+import { askGemini, hasApiKey, streamChat } from "../services/geminiService";
+import {
+  DEFAULT_ELEVENLABS_VOICES,
+  getSelectedVoiceId,
+  setSelectedVoiceId,
+  speakWithElevenLabs,
+  stopElevenLabsAudio,
+  hasElevenLabsApiKey,
+} from "../services/elevenLabsService";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
-import { MODELS, SYSTEM_INSTRUCTION } from '../constants';
+interface VoiceViewProps {
+  onOpenApiKeyModal: () => void;
+}
 
-const VoiceView: React.FC = () => {
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+const VoiceView: React.FC<VoiceViewProps> = ({ onOpenApiKeyModal }) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [transcription, setTranscription] = useState('');
-  
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sessionRef = useRef<any>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const nextStartTimeRef = useRef(0);
-  const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const [transcription, setTranscription] = useState("");
+  const [response, setResponse] = useState("");
+  const [useElevenLabs, setUseElevenLabs] = useState(true);
+  const [currentVoiceId, setCurrentVoiceId] = useState(getSelectedVoiceId());
 
-  const decode = (base64: string) => {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
+  const transcriptionRef = useRef("");
+  const autoStopTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition =
+        (window as any).webkitSpeechRecognition ||
+        (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = "uz-UZ";
+
+      recognitionRef.current.onresult = (event: any) => {
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + " ";
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const text = (finalTranscript || interimTranscript).trim();
+        transcriptionRef.current = text;
+        setTranscription(text);
+        if (
+          finalTranscript.trim() &&
+          mediaRecorderRef.current?.state === "recording"
+        ) {
+          if (autoStopTimerRef.current)
+            window.clearTimeout(autoStopTimerRef.current);
+          autoStopTimerRef.current = window.setTimeout(
+            () => stopRecording(),
+            250,
+          );
+        }
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
+      };
     }
-    return bytes;
+
+    return () => {
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        /* ignore */
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      stopElevenLabsAudio();
+    };
+  }, []);
+
+  const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () =>
+        resolve((reader.result as string).split(",")[1] || "");
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+  const handleSpeak = async (textToSpeak: string) => {
+    if (!textToSpeak) return;
+    setIsSpeaking(true);
+
+    if (useElevenLabs && hasElevenLabsApiKey()) {
+      await speakWithElevenLabs(
+        textToSpeak,
+        currentVoiceId,
+        () => setIsSpeaking(true),
+        () => setIsSpeaking(false),
+        () => setIsSpeaking(false),
+      );
+    } else {
+      if (!("speechSynthesis" in window)) {
+        setIsSpeaking(false);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = "uz-UZ";
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      const voice =
+        voices.find((v) => v.lang.toLowerCase().startsWith("uz")) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith("ru")) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith("en"));
+      if (voice) utterance.voice = voice;
+
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
-  const decodeAudioData = async (
-    data: Uint8Array,
-    ctx: AudioContext,
-    sampleRate: number,
-    numChannels: number,
-  ): Promise<AudioBuffer> => {
-    const dataInt16 = new Int16Array(data.buffer);
-    const frameCount = dataInt16.length / numChannels;
-    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+  const handleVoiceChange = (voiceId: string) => {
+    setCurrentVoiceId(voiceId);
+    setSelectedVoiceId(voiceId);
+  };
 
-    for (let channel = 0; channel < numChannels; channel++) {
-      const channelData = buffer.getChannelData(channel);
-      for (let i = 0; i < frameCount; i++) {
-        channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+  const startRecording = async () => {
+    if (!hasApiKey()) {
+      onOpenApiKeyModal();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current);
+        // Mikrofonni darhol bo'shatamiz — javob kutish shart emas
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        void processAudio(audioBlob);
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch {
+          /* allaqachon faol */
+        }
+      }
+    } catch (err) {
+      console.error("Mikrofonni yoqishda xatolik:", err);
+      alert(
+        "Mikrofonni yoqib bo'lmadi. Iltimos brauzeringizda mikrofonga ruxsat bering.",
+      );
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        /* ignore */
       }
     }
-    return buffer;
   };
 
-  const encode = (bytes: Uint8Array) => {
-    let binary = '';
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  };
+  const processAudio = async (audioBlob: Blob) => {
+    setIsProcessing(true);
+    setResponse("");
 
-  const startVoiceMode = async () => {
     try {
-      setIsConnecting(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      
-      // Request audio with processing to improve input quality
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      });
-      mediaStreamRef.current = stream;
-      
-      const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      audioContextRef.current = outputCtx;
-
-      const sessionPromise = ai.live.connect({
-        model: MODELS.VOICE,
-        callbacks: {
-          onopen: () => {
-            setIsConnected(true);
-            setIsConnecting(false);
-            const source = inputCtx.createMediaStreamSource(stream);
-            const processor = inputCtx.createScriptProcessor(4096, 1, 1);
-            
-            processor.onaudioprocess = (e) => {
-              const inputData = e.inputBuffer.getChannelData(0);
-              const int16 = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) {
-                int16[i] = inputData[i] * 32768;
-              }
-              const pcmBlob = {
-                data: encode(new Uint8Array(int16.buffer)),
-                mimeType: 'audio/pcm;rate=16000'
-              };
-              sessionPromise.then(s => s.sendRealtimeInput({ media: pcmBlob }));
-            };
-
-            source.connect(processor);
-            processor.connect(inputCtx.destination);
+      const spokenText = transcriptionRef.current.trim();
+      if (spokenText) {
+        const responseText = await streamChat(
+          spokenText,
+          undefined,
+          [],
+          (chunk) => setResponse((current) => current + chunk),
+          {
+            mode: "fast",
+            systemInstruction:
+              SYSTEM_INSTRUCTION +
+              " Siz ovozli rejimdasiz. Javobni insondek tabiiy, qisqa va aniq bering. Darhol asosiy javobni ayting.",
+            maxOutputTokens: 512,
+            timeoutMs: 30000,
           },
-          onmessage: async (msg: LiveServerMessage) => {
-            if (msg.serverContent?.outputTranscription) {
-              setTranscription(prev => prev + ' ' + msg.serverContent?.outputTranscription?.text);
-            }
-            
-            const audioData = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-            if (audioData) {
-              setIsSpeaking(true);
-              const buffer = await decodeAudioData(decode(audioData), outputCtx, 24000, 1);
-              const source = outputCtx.createBufferSource();
-              source.buffer = buffer;
-              source.connect(outputCtx.destination);
-              
-              nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
-              source.start(nextStartTimeRef.current);
-              nextStartTimeRef.current += buffer.duration;
-              
-              source.onended = () => {
-                sourcesRef.current.delete(source);
-                if (sourcesRef.current.size === 0) setIsSpeaking(false);
-              };
-              sourcesRef.current.add(source);
-            }
+        );
+        setResponse(responseText);
+        await handleSpeak(responseText);
+        return;
+      }
+      const parts: any[] = [];
 
-            if (msg.serverContent?.interrupted) {
-              sourcesRef.current.forEach(s => s.stop());
-              sourcesRef.current.clear();
-              nextStartTimeRef.current = 0;
-            }
-          },
-          onerror: (e) => console.error(e),
-          onclose: () => {
-            setIsConnected(false);
-            setIsConnecting(false);
-          }
-        },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          systemInstruction: SYSTEM_INSTRUCTION + " Ovozli muloqot rejimidasan. Qisqa va lo'nda javob ber. Ovozli muloqot juda tez va aniq bo'lishi kerak.",
-          speechConfig: {
-            // Using Zephyr as it's generally clearer than Kore
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
-          },
-          outputAudioTranscription: {},
-          inputAudioTranscription: {}
+      // Matn aniqlangan bo'lsa — uni yuboramiz (eng tez va aniq yo'l).
+      // Matn bo'lmasa — audioni to'g'ridan-to'g'ri modelga yuboramiz.
+      if (!spokenText && audioBlob.size > 0) {
+        const base64Audio = await blobToBase64(audioBlob);
+        if (base64Audio) {
+          parts.push({
+            inlineData: {
+              mimeType: audioBlob.type || "audio/webm",
+              data: base64Audio,
+            },
+          });
         }
+      }
+
+      parts.push({
+        text:
+          spokenText ||
+          "Foydalanuvchi ovozli xabar yubordi. Qisqa va aniq javob ber.",
       });
 
-      sessionRef.current = await sessionPromise;
-    } catch (err) {
-      console.error(err);
-      setIsConnecting(false);
+      const responseText = await askGemini({
+        parts,
+        systemInstruction:
+          SYSTEM_INSTRUCTION +
+          " Siz ovozli rejimdasiz. Javobingiz qisqa, aniq va tushunarli bo'lsin.",
+        maxOutputTokens: 512,
+        timeoutMs: 30000,
+      });
+
+      setResponse(responseText);
+      await handleSpeak(responseText);
+    } catch (err: any) {
+      console.error("Audio qayta ishlashda xatolik:", err);
+      setResponse("⚠️ " + (err?.message || "Javob olishda xatolik yuz berdi."));
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const stopVoiceMode = () => {
-    sessionRef.current?.close();
-    mediaStreamRef.current?.getTracks().forEach(t => t.stop());
-    setIsConnected(false);
-    setTranscription('');
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-8">
-      <div className="relative">
-        <div className={`w-48 h-48 rounded-full flex items-center justify-center transition-all duration-700 ${
-          isConnected ? (isSpeaking ? 'bg-blue-600 scale-110 shadow-[0_0_80px_rgba(37,99,235,0.7)]' : 'bg-blue-600/40 scale-100 shadow-[0_0_40px_rgba(37,99,235,0.2)]') : 'bg-slate-800'
-        }`}>
-           {isConnected ? (
-             <div className="flex space-x-1.5 items-center">
-                {[1,2,3,4,5,6,7].map(i => (
-                  <div key={i} className={`w-1.5 bg-white rounded-full transition-all duration-300 ${
-                    isSpeaking ? 'animate-bounce h-16' : 'h-6 opacity-40'
-                  }`} style={{ animationDelay: `${i * 0.08}s` }} />
-                ))}
-             </div>
-           ) : (
-             <svg className="w-20 h-20 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" strokeWidth="1.5"/></svg>
-           )}
+    <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-8 text-center space-y-6 overflow-y-auto custom-scrollbar">
+      {/* Voice engine and model selector bar */}
+      <div className="flex items-center gap-3 flex-wrap justify-center glass px-4 py-2 rounded-2xl border border-white/10 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 font-bold">Ovoz texnologiyasi:</span>
+          <button
+            onClick={() => setUseElevenLabs(!useElevenLabs)}
+            className={`px-3 py-1 rounded-xl font-bold transition flex items-center gap-1.5 ${
+              useElevenLabs
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                : "bg-slate-800 text-slate-400 border border-white/10"
+            }`}
+          >
+            <span>🎙 ElevenLabs HD</span>
+            <span
+              className={`w-2 h-2 rounded-full ${hasElevenLabsApiKey() ? "bg-emerald-400" : "bg-amber-400"}`}
+            />
+          </button>
+        </div>
+
+        {useElevenLabs && (
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400 font-bold">Ovoz:</span>
+            <select
+              value={currentVoiceId}
+              onChange={(e) => handleVoiceChange(e.target.value)}
+              className="bg-slate-800 border border-white/10 rounded-xl px-2.5 py-1 text-slate-200 text-xs font-semibold outline-none"
+            >
+              {DEFAULT_ELEVENLABS_VOICES.map((v) => (
+                <option key={v.voice_id} value={v.voice_id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <button
+          onClick={onOpenApiKeyModal}
+          className="text-slate-400 hover:text-white underline font-semibold ml-2"
+        >
+          ⚙️ Sozlamalar
+        </button>
+      </div>
+
+      <div className="relative my-2">
+        <div
+          className={`w-36 h-36 md:w-44 md:h-44 rounded-full flex items-center justify-center transition-all duration-500 ${
+            isRecording
+              ? "bg-red-600 scale-105 shadow-[0_0_80px_rgba(220,38,38,0.7)]"
+              : isSpeaking
+                ? "bg-cyan-600 scale-105 shadow-[0_0_60px_rgba(6,182,212,0.6)] animate-pulse"
+                : isProcessing
+                  ? "bg-blue-600 scale-100 shadow-[0_0_40px_rgba(37,99,235,0.5)]"
+                  : "bg-slate-800 border border-slate-700"
+          }`}
+        >
+          {isRecording ? (
+            <div className="flex space-x-1.5 items-center">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <div
+                  key={i}
+                  className="w-1.5 bg-white rounded-full animate-bounce h-12 md:h-16"
+                  style={{ animationDelay: `${i * 0.08}s` }}
+                />
+              ))}
+            </div>
+          ) : isSpeaking ? (
+            <div className="flex space-x-1.5 items-center">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="w-2 bg-white rounded-full animate-bounce h-8 md:h-12"
+                  style={{ animationDelay: `${i * 0.12}s` }}
+                />
+              ))}
+            </div>
+          ) : isProcessing ? (
+            <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <svg
+              className="w-16 h-16 md:w-20 md:h-20 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                strokeWidth="1.5"
+              />
+            </svg>
+          )}
         </div>
       </div>
 
-      <div className="max-w-lg space-y-4">
-        <h2 className="text-3xl font-bold">{isConnected ? 'Sizni eshityapman...' : 'Kristaldek tiniq ovozli muloqot'}</h2>
-        <p className="text-slate-400">
-          {isConnected 
-            ? 'SuperAI bilan jonli muloqot. Iltimos, gapiring.' 
-            : 'Gemini 3 texnologiyasi asosida ultra-tezkor va aniq ovozli muloqot. Chatgptdan ancha tez va tiniq.'}
+      <div className="max-w-lg space-y-3">
+        <h2 className="text-2xl md:text-3xl font-bold">
+          {isRecording
+            ? "Sizni eshityapman..."
+            : isSpeaking
+              ? "SuperAI gapirmoqda..."
+              : isProcessing
+                ? "Qayta ishlanmoqda..."
+                : "Ovozli Muloqot Rejimi"}
+        </h2>
+        <p className="text-slate-400 text-sm md:text-base">
+          {isRecording
+            ? "SuperAI bilan jonli muloqot ketmoqda. Marhamat, gapiring."
+            : isSpeaking
+              ? "ElevenLabs tabiiy ovozi orqali javob berilmoqda."
+              : isProcessing
+                ? "Javob tayyorlanmoqda va ovozlantirilmoqda..."
+                : "Ultra-tezkor va tabiiy ovozli muloqot. Tugmani bosib gapiring."}
         </p>
-        
+
         {transcription && (
-          <div className="p-5 glass rounded-2xl text-base italic text-blue-100 max-h-40 overflow-y-auto border border-blue-500/20 shadow-inner">
-             "{transcription}"
+          <div className="p-4 glass rounded-2xl text-sm italic text-blue-100 max-h-32 overflow-y-auto border border-blue-500/20 shadow-inner">
+            <strong className="text-blue-400 not-italic">Siz:</strong> "
+            {transcription}"
+          </div>
+        )}
+
+        {response && (
+          <div className="p-4 glass rounded-2xl text-sm text-emerald-100 max-h-36 overflow-y-auto border border-emerald-500/20 shadow-inner relative group">
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-left flex-1">
+                <strong className="text-emerald-400">SuperAI:</strong>{" "}
+                {response}
+              </div>
+              <button
+                onClick={() => handleSpeak(response)}
+                disabled={isSpeaking}
+                className="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold shrink-0 transition"
+                title="Qayta o'qish"
+              >
+                🔊 Qayta tinglash
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      <button
-        onClick={isConnected ? stopVoiceMode : startVoiceMode}
-        disabled={isConnecting}
-        className={`px-16 py-5 rounded-2xl font-bold text-xl shadow-2xl transition-all active:scale-95 transform hover:-translate-y-1 ${
-          isConnected 
-            ? 'bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500 hover:text-white' 
-            : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 shadow-blue-900/40'
-        }`}
-      >
-        {isConnecting ? 'Ulanmoqda...' : (isConnected ? 'To\'xtatish' : 'Muloqotni boshlash')}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={toggleRecording}
+          disabled={isProcessing}
+          className={`px-10 md:px-14 py-4 rounded-2xl font-black text-base md:text-lg shadow-2xl transition-all active:scale-95 transform ${
+            isRecording
+              ? "bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500 hover:text-white"
+              : isProcessing
+                ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 text-white hover:brightness-110 shadow-blue-900/40"
+          }`}
+        >
+          {isProcessing
+            ? "Ishlanmoqda..."
+            : isRecording
+              ? "To'xtatish"
+              : "Muloqotni boshlash"}
+        </button>
 
-      <div className="flex space-x-8 text-xs text-slate-500 uppercase tracking-widest font-semibold">
-         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Ultra Low Latency</span>
-         <span>Uzbek/Russian/English</span>
-         <span>Zephyr HD Voice</span>
+        {isSpeaking && (
+          <button
+            onClick={() => {
+              stopElevenLabsAudio();
+              setIsSpeaking(false);
+            }}
+            className="px-5 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold border border-white/10 transition"
+          >
+            ⏹ Ovozni to'xtatish
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center space-x-6 text-[10px] md:text-xs text-slate-500 uppercase tracking-widest font-semibold pt-2">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          ElevenLabs Natural Voice
+        </span>
+        <span>O'zbek / Rus / Ingliz</span>
+        <span>Gemini AI</span>
       </div>
     </div>
   );
