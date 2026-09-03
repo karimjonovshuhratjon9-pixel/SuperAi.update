@@ -1,4 +1,24 @@
+# ============================================
+# Dependencies
+# ============================================
+node_modules
+.pnp
+.pnp.js
+
+# ============================================
+# Build outputs
+# ============================================
+dist
+dist-ssr
+build
+coverage
+.vite/
+*.tsbuildinfo
+*.local
+
+# ============================================
 # Logs
+# ============================================
 logs
 *.log
 npm-debug.log*
@@ -7,21 +27,38 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ============================================
+# Environment variables — KEEP LOCAL, NEVER COMMIT
+# (.env.example is the safe template that SHOULD be committed)
+# ============================================
+.env
+.env.*
+!.env.example
 
-# Editor directories and files
+# ============================================
+# Editor directories & files
+# ============================================
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
-.env.local
-.env.example
+
+# ============================================
+# OS files
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Sensitive files (never commit)
+# ============================================
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
