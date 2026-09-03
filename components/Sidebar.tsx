@@ -335,7 +335,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-4 md:p-6 flex items-center justify-between">
           {!collapsed && (
             <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500 tracking-tight">
-              SuperAI
+              AivoraAI
             </h2>
           )}
           {collapsed && (

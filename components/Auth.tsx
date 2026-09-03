@@ -43,7 +43,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             </svg>
           </div>
           <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
-            SuperAI
+            AivoraAI
           </h1>
           <p className="mt-2 text-slate-400 font-medium">
             Haqiqiy sun'iy intellekt tajribasi
