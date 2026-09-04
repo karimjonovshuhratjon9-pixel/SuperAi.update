@@ -283,7 +283,7 @@ export const Toast: React.FC<{
   };
   return (
     <div
-      className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-2xl border text-white text-sm font-bold shadow-2xl animate-fade-in ${colors[type]}`}
+      className={`fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[200] px-5 py-3 rounded-2xl border text-white text-sm font-bold shadow-2xl animate-fade-in max-w-[calc(100%-2rem)] sm:max-w-sm safe-area-bottom ${colors[type]}`}
     >
       <div className="flex items-center gap-3">
         <span>{message}</span>

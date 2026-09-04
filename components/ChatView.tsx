@@ -745,7 +745,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`flex flex-col space-y-2 w-full min-w-0 max-w-[95%] md:max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}
+              className={`flex flex-col space-y-2 w-full min-w-0 max-w-[95%] md:max-w-[85%] lg:max-w-[min(85%,860px)] ${msg.role === "user" ? "items-end" : "items-start"}`}
             >
               <div
                 className={`rounded-3xl p-4 md:p-5 shadow-2xl w-full min-w-0 overflow-hidden ${
@@ -761,7 +761,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                     className="max-w-full max-h-80 object-cover rounded-2xl mb-4 border border-white/20 shadow-lg"
                   />
                 )}
-                <div className="whitespace-pre-wrap text-sm md:text-[15px] leading-relaxed font-medium">
+                <div className="whitespace-pre-wrap break-words text-sm md:text-[15px] leading-relaxed font-medium">
                   {msg.role === "assistant" ? (
                     <MarkdownRenderer content={msg.content} />
                   ) : (
@@ -975,7 +975,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 </button>
               </div>
             )}
-            <div className="flex items-center space-x-2 md:space-x-3 px-2">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 px-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -1042,7 +1042,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 }}
                 placeholder="Savol bering yoki rasm yuklang..."
                 aria-label="Xabar yozish"
-                className="flex-1 bg-transparent border-none outline-none text-slate-100 placeholder-slate-500 py-3.5 resize-none max-h-32 text-sm md:text-[15px] font-medium"
+                className="flex-1 min-w-0 bg-transparent border-none outline-none text-slate-100 placeholder-slate-500 py-3.5 resize-none max-h-32 text-[16px] md:text-[15px] font-medium"
               />
               <button
                 type="button"

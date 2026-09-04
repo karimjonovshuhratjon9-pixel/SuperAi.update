@@ -93,7 +93,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen w-full bg-[#0f172a] overflow-hidden text-slate-100 font-sans">
+      <div className="flex h-screen h-[100dvh] w-full bg-[#0f172a] overflow-hidden text-slate-100 font-sans">
         <Sidebar
           currentView={view}
           setView={setView}

@@ -79,9 +79,9 @@ export const SettingsView: React.FC<SettingsProps> = ({
         )}
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Navigation Tabs */}
-        <div className="w-64 border-r border-white/10 bg-slate-900/40 p-4 space-y-1">
+        <div className="w-full md:w-64 shrink-0 border-b md:border-r border-white/10 bg-slate-900/40 p-2.5 md:p-4 space-y-1">
           {[
             { id: "general", label: "👤 Foydalanuvchi & Profil" },
             { id: "integrations", label: "🔌 Integratsiyalar & Botlar" },
@@ -103,7 +103,7 @@ export const SettingsView: React.FC<SettingsProps> = ({
         </div>
 
         {/* Tab Body */}
-        <div className="flex-1 p-6 overflow-y-auto bg-slate-950/80">
+        <div className="flex-1 min-w-0 p-6 md:pl-6 overflow-y-auto bg-slate-950/80">
           <div className="max-w-2xl mx-auto space-y-6">
             {activeTab === "general" && (
               <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 space-y-4">

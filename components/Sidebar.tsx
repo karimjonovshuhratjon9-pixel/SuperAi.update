@@ -52,6 +52,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => unsub();
   }, []);
 
+  // Mobil sidebar ochiq vaqtida: body scroll'ni bloklash + Escape bilan yopish
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseMobile?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen, onCloseMobile]);
+
   useEffect(() => {
     if (user) {
       dbService.getChatsByUserId(user.id).then(setHistory);
@@ -326,7 +341,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
       <aside
-        className={`${collapsed ? "w-16" : "w-72"} glass flex-col h-full z-40 border-r border-white/5 select-none fixed md:static left-0 top-0 transition-all duration-300 ${
+        className={`${collapsed ? "w-16" : "w-72 max-w-[88vw]"} glass flex-col h-full z-50 border-r border-white/5 select-none fixed md:static left-0 top-0 transition-all duration-300 overscroll-contain [touch-action:manipulation] ${
           mobileOpen
             ? "flex translate-x-0"
             : "flex -translate-x-full md:translate-x-0"

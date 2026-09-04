@@ -78,7 +78,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="flex-1 flex flex-col h-full bg-[#0f172a] relative overflow-hidden">
       {/* Mobile Top Header (hidden for immersive Virtual Do'st) */}
       {currentView !== AppView.VIRTUAL_FRIEND && (
-      <div className="md:hidden glass px-4 py-3 flex items-center justify-between border-b border-white/5 z-20">
+      <div className="md:hidden glass px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex items-center justify-between border-b border-white/5 z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}

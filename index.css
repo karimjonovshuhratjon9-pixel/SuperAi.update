@@ -2,12 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   AIVORA AI — GLOBAL RESPONSIVE FOUNDATION
+   Mobile-first. Barcha qurilmalarda oqimli (fluid) layout.
+   ============================================================ */
+
 :root {
   --app-bg: #0f172a;
   --surface: rgba(30, 41, 59, 0.7);
   --surface-strong: #172033;
   --border-subtle: rgba(255, 255, 255, 0.1);
   --focus-ring: rgba(96, 165, 250, 0.8);
+
+  /* Safe-area insets (iPhone / Android notched devices) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
@@ -20,6 +43,57 @@ body {
   background-color: var(--app-bg);
   color: #f8fafc;
   overflow-x: hidden;
+  min-height: 100vh;
+  /* Brave / eski tizimlarda dynamic viewport (100dvh) yo'q bo'lsa */
+  min-height: 100dvh;
+}
+
+/* Rasm / media elementlar hech qachon ekrandan chiqmasin */
+img,
+picture,
+video,
+canvas,
+iframe,
+embed {
+  max-width: 100%;
+}
+
+/* Uzun so'zlar va URL'lar layoutni buzmasligi uchun.
+   Kod bloklari (pre/code) bu qoidadan istisno — ular o'z scroll'iga ega. */
+body {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pre-line,
+pre,
+code,
+kbd,
+samp {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+textarea,
+input,
+select,
+button {
+  font: inherit;
+}
+
+/* iOS dasturlarida xavfsiz maydonlar */
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, var(--safe-bottom));
+}
+
+.safe-area-top {
+  padding-top: var(--safe-top);
+}
+
+/* Viewportning butun ko'rinadigan balandligini egallash (mobil address bar to'g'ri hisoblanadi) */
+.dvh-screen {
+  height: 100vh;
+  height: 100dvh;
 }
 
 .glass {
@@ -29,11 +103,63 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-button,
-input,
-textarea,
-select {
-  font: inherit;
+/* ============================================================
+   OQIMLI TYPOGRAPHY — clamp() asosida responsive shrift
+   ============================================================ */
+
+.text-fluid-sm {
+  font-size: clamp(0.8rem, 0.9vw + 0.6rem, 0.9rem);
+}
+
+.text-fluid-body {
+  font-size: clamp(0.92rem, 1vw + 0.5rem, 1.05rem);
+}
+
+.text-fluid-lg {
+  font-size: clamp(1.05rem, 1.6vw + 0.5rem, 1.5rem);
+}
+
+.text-fluid-xl {
+  font-size: clamp(1.4rem, 3vw, 3rem);
+}
+
+/* ============================================================
+   OQIMLI KENGAYTIRISH — super/ultra-wide ekranlar uchun
+   ============================================================ */
+
+.shell {
+  width: min(100%, 1200px);
+  margin-inline: auto;
+}
+
+.shell-wide {
+  width: min(100%, 1600px);
+  margin-inline: auto;
+}
+
+.shell-narrow {
+  width: min(100%, 640px);
+  margin-inline: auto;
+}
+
+/* Oqimli padding (spacing viewportga moslashadi) */
+.fluid-pad {
+  padding-inline: clamp(12px, 2.5vw, 40px);
+}
+
+/* Touch elementlari — 320px kichik ekranlarda ham qulay bosiladi */
+.tappable {
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Header/topbar va footer uchun yopishqoq (sticky) yordamchi */
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 button:focus-visible,
@@ -45,9 +171,9 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-.safe-area-bottom {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-}
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -72,6 +198,26 @@ a:focus-visible {
   scrollbar-color: #334155 transparent;
 }
 
+/* Markdown/javoblardagi jadvallar va inline kontentni himoya qilish */
+.markdown-body table {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  border-collapse: collapse;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-body pre,
+.markdown-body code {
+  overflow-wrap: normal;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -87,6 +233,29 @@ a:focus-visible {
   animation: fade-in 0.5s ease-out;
 }
 
+/* ============================================================
+   MOBILE PERFORMANCE — og'ir effektlar oddiylashtiriladi
+   ============================================================ */
+
+@media (max-width: 767px) {
+  .glass {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Past darajadagi ekranlarda haddan tashqari ko'p shadow — yengillatamiz */
+  .glass,
+  .card {
+    box-shadow: none;
+  }
+}
+
+/* Tebranish/scroll qo'llab-quvvatlovchi qurilmalar */
+@media (hover: none) and (pointer: coarse) {
+  .tappable {
+    touch-action: manipulation;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
