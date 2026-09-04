@@ -70,9 +70,19 @@ const ChatView: React.FC<ChatViewProps> = ({
   const pendingContentRef = useRef("");
   const rafRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
+  // Yangi chat yaratilganda bir martalik db-reload'ni o'tkazib yuborish uchun
+  // (aks holda useEffect [chatId] stream davomida messages'ni db dagi eski
+  // holat bilan almashtirib, AI javobining ko'rinmasligiga sabab bo'lardi)
+  const skipReloadRef = useRef(false);
+  const streamingChatIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (chatId) {
+      if (skipReloadRef.current) {
+        skipReloadRef.current = false;
+        return;
+      }
+      if (streamingChatIdRef.current === chatId) return;
       dbService.getMessagesByChatId(chatId).then(setMessages);
     } else {
       setMessages([]);
@@ -113,6 +123,7 @@ const ChatView: React.FC<ChatViewProps> = ({
 
       setMessages((prev) => [...prev, assistantPlaceholder]);
       setIsLoading(true);
+      streamingChatIdRef.current = activeChatId;
 
       try {
         pendingContentRef.current = "";
@@ -230,6 +241,9 @@ const ChatView: React.FC<ChatViewProps> = ({
         );
       } finally {
         setIsLoading(false);
+        if (streamingChatIdRef.current === activeChatId) {
+          streamingChatIdRef.current = null;
+        }
       }
     },
     [agentId, memory, mode, modelProvider, systemPrompt, onNewMessage],
@@ -266,6 +280,10 @@ const ChatView: React.FC<ChatViewProps> = ({
         timestamp: Date.now(),
       };
       await dbService.createChat(newChat);
+      // chatId o'zgarishi useEffect'dagi db-reload'ni keltirib chiqaradi.
+      // Stream davomida messages almashtirilmasligi uchun bir martalik
+      // reload'ni o'tkazib yuboramiz (race condition tuzatildi).
+      skipReloadRef.current = true;
       onChatCreated(activeChatId);
     }
 
