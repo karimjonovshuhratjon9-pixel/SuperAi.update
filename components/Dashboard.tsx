@@ -78,29 +78,54 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="flex-1 flex flex-col h-full bg-[#0f172a] relative overflow-hidden">
       {/* Mobile Top Header (hidden for immersive Virtual Do'st) */}
       {currentView !== AppView.VIRTUAL_FRIEND && (
-      <div className="md:hidden glass px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex items-center justify-between border-b border-white/5 z-20">
-        <div className="flex items-center gap-3">
+      <div
+        className="md:hidden glass px-4 pb-2.5 flex items-center justify-between border-b border-white/5 z-20"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
+        <div className="flex items-center gap-2.5">
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition"
+            className="w-10 h-10 p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition flex items-center justify-center"
             aria-label="Menyuni ochish"
           >
-            <span aria-hidden="true">☰</span>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
           </button>
-          <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">
-            SuperAI
-          </h1>
+          <div className="flex items-center gap-2">
+            <span
+              className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-sm text-white shadow-lg"
+              aria-hidden="true"
+            >
+              ⚡
+            </span>
+            <h1 className="text-[17px] font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 tracking-tight">
+              Aivora AI
+            </h1>
+          </div>
         </div>
         <button
           onClick={onOpenApiKeyModal}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+          className={`w-10 h-10 p-2 rounded-xl flex items-center justify-center transition ${
             hasApiKey()
-              ? "bg-slate-800 text-slate-300 border border-slate-700"
-              : "bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse"
+              ? "text-slate-400 hover:text-white hover:bg-slate-800"
+              : "text-amber-400 bg-amber-500/10 border border-amber-500/30"
           }`}
+          aria-label="API Key sozlamalari"
+          title="API Key sozlamalari"
         >
           <svg
-            className="w-3.5 h-3.5"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -112,7 +137,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"
             />
           </svg>
-          <span>{hasApiKey() ? "API Key" : "Key Kiriting"}</span>
         </button>
       </div>
       )}
@@ -296,12 +320,16 @@ const Dashboard: React.FC<DashboardProps> = ({
       {currentView !== AppView.VIRTUAL_FRIEND && (
       <nav
         aria-label="Mobil navigatsiya"
-        className="md:hidden glass fixed bottom-0 left-0 right-0 flex justify-around py-3 px-2 safe-area-bottom z-40 border-t border-white/10"
+        className="md:hidden glass fixed bottom-0 left-0 right-0 flex justify-around pt-1.5 safe-area-bottom px-1.5 z-40 border-t border-white/10"
       >
         <button
           onClick={() => setView(AppView.CHAT)}
           aria-label="Chat bo'limi"
-          className={`flex flex-col items-center gap-1 p-2 rounded-xl transition ${currentView === AppView.CHAT ? "text-blue-400 font-bold" : "text-slate-400"}`}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl transition ${
+            currentView === AppView.CHAT
+              ? "text-blue-400 bg-blue-500/10 font-bold"
+              : "text-slate-400 active:bg-slate-800/60"
+          }`}
         >
           <svg
             className="w-5 h-5"
@@ -314,12 +342,16 @@ const Dashboard: React.FC<DashboardProps> = ({
               strokeWidth="2"
             />
           </svg>
-          <span className="text-[10px]">Chat</span>
+          <span className="text-[10px] leading-none">Chat</span>
         </button>
         <button
           onClick={() => setView(AppView.VOICE)}
           aria-label="Ovozli muloqot bo'limi"
-          className={`flex flex-col items-center gap-1 p-2 rounded-xl transition ${currentView === AppView.VOICE ? "text-blue-400 font-bold" : "text-slate-400"}`}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl transition ${
+            currentView === AppView.VOICE
+              ? "text-blue-400 bg-blue-500/10 font-bold"
+              : "text-slate-400 active:bg-slate-800/60"
+          }`}
         >
           <svg
             className="w-5 h-5"
@@ -332,12 +364,16 @@ const Dashboard: React.FC<DashboardProps> = ({
               strokeWidth="2"
             />
           </svg>
-          <span className="text-[10px]">Ovozli</span>
+          <span className="text-[10px] leading-none">Ovozli</span>
         </button>
         <button
           onClick={() => setView(AppView.IMAGE_GEN)}
           aria-label="Image Studio bo'limi"
-          className={`flex flex-col items-center gap-1 p-2 rounded-xl transition ${currentView === AppView.IMAGE_GEN ? "text-blue-400 font-bold" : "text-slate-400"}`}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl transition ${
+            currentView === AppView.IMAGE_GEN
+              ? "text-blue-400 bg-blue-500/10 font-bold"
+              : "text-slate-400 active:bg-slate-800/60"
+          }`}
         >
           <svg
             className="w-5 h-5"
@@ -350,12 +386,16 @@ const Dashboard: React.FC<DashboardProps> = ({
               strokeWidth="2"
             />
           </svg>
-          <span className="text-[10px]">Image</span>
+          <span className="text-[10px] leading-none">Image</span>
         </button>
         <button
           onClick={() => setView(AppView.AGENT_HUB)}
           aria-label="Agent Hub bo'limi"
-          className={`flex flex-col items-center gap-1 p-2 rounded-xl transition ${currentView === AppView.AGENT_HUB ? "text-blue-400 font-bold" : "text-slate-400"}`}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl transition ${
+            currentView === AppView.AGENT_HUB
+              ? "text-blue-400 bg-blue-500/10 font-bold"
+              : "text-slate-400 active:bg-slate-800/60"
+          }`}
         >
           <svg
             className="w-5 h-5"
@@ -368,7 +408,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               strokeWidth="2"
             />
           </svg>
-          <span className="text-[10px]">Agents</span>
+          <span className="text-[10px] leading-none">Agents</span>
         </button>
       </nav>
       )}

@@ -257,6 +257,83 @@ a:focus-visible {
   }
 }
 
+/* ============================================================
+   CHAT COMPOSER — AIVORA AI premium chat input
+   ============================================================ */
+
+/* Scrollbar ko'rinmaydigan, lekin baribir scroll qiladigan chip row */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Composer markazlashgan va kenglik chegarasi (ultra-wide uchun) */
+.composer-shell {
+  width: min(100%, 840px);
+  margin-inline: auto;
+}
+
+/* Composer container — ixcham, pill-dan ko'ra soft rounded */
+.ai-composer {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.35);
+}
+
+/* Row 2 dagi kichik action tugmalar uchun birlashtirilgan style */
+.composer-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: #94a3b8;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.composer-tool:hover {
+  background-color: rgba(51, 65, 85, 0.4);
+  color: #e2e8f0;
+}
+.composer-tool.is-active {
+  background-color: rgba(6, 182, 212, 0.18);
+  color: #22d3ee;
+}
+/* Microfon tinglash faolligi — muhim vizual signal */
+.composer-tool.is-listening {
+  background-color: rgba(220, 38, 38, 0.55);
+  color: #f87171;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Send tugmasi — premium, ixcham */
+.composer-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.composer-send:active {
+  transform: scale(0.9);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

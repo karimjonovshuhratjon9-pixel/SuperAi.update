@@ -56,6 +56,7 @@ const ChatView: React.FC<ChatViewProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showPromptLib, setShowPromptLib] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [agentId, setAgentId] = useState("general");
@@ -586,12 +587,12 @@ const ChatView: React.FC<ChatViewProps> = ({
         </div>
       )}
 
-      {/* Toolbar: rejim + export + system prompt */}
-      <div className="shrink-0 flex items-center gap-2 px-4 md:px-10 py-2 border-b border-white/5 overflow-x-auto custom-scrollbar">
+      {/* Toolbar: rejim + export + system prompt — scroll qilinadigan chip row */}
+      <div className="shrink-0 flex items-center gap-2 px-4 md:px-10 py-2 border-b border-white/5 overflow-x-auto no-scrollbar">
         <select
           value={agentId}
           onChange={(e) => setAgentId(e.target.value)}
-          className="shrink-0 px-3 py-1.5 text-[11px] font-bold rounded-full bg-emerald-600/20 text-emerald-200 border border-emerald-500/30 outline-none"
+          className="shrink-0 px-3 h-8 text-[11px] font-bold rounded-full bg-emerald-600/15 text-emerald-200 border border-emerald-500/25 outline-none"
           title="Agent profilini tanlang"
         >
           {AGENT_PROFILES.map((agent) => (
@@ -603,14 +604,14 @@ const ChatView: React.FC<ChatViewProps> = ({
         <button
           type="button"
           title="Barcha so'rovlar tez va kuchli Smart model orqali ishlaydi"
-          className="shrink-0 px-3 py-1.5 text-[11px] font-black rounded-full border bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-lg"
+          className="shrink-0 px-3 h-8 text-[11px] font-black rounded-full border bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent"
         >
           ⚡ Smart model
         </button>
-        <div className="flex-1" />
+        <div className="hidden md:block flex-1" />
         <button
           onClick={() => setSystemPromptOpen((v) => !v)}
-          className={`shrink-0 px-3 py-1.5 text-[11px] font-bold rounded-full border transition ${
+          className={`shrink-0 h-8 px-3 text-[11px] font-bold rounded-full border transition ${
             systemPrompt
               ? "bg-purple-600/30 text-purple-200 border-purple-500/40"
               : "bg-white/5 text-slate-400 border-white/10 hover:text-white"
@@ -621,14 +622,14 @@ const ChatView: React.FC<ChatViewProps> = ({
         </button>
         <button
           onClick={() => setMemoryOpen((value) => !value)}
-          className={`shrink-0 px-3 py-1.5 text-[11px] font-bold rounded-full border transition ${memory ? "bg-amber-600/20 text-amber-200 border-amber-500/30" : "bg-white/5 text-slate-400 border-white/10 hover:text-white"}`}
+          className={`shrink-0 h-8 px-3 text-[11px] font-bold rounded-full border transition ${memory ? "bg-amber-600/20 text-amber-200 border-amber-500/30" : "bg-white/5 text-slate-400 border-white/10 hover:text-white"}`}
           title="Foydalanuvchi xotirasi"
         >
           🧠 Xotira{memory ? " ✓" : ""}
         </button>
         <button
           onClick={() => exportChat("md")}
-          className="shrink-0 px-3 py-1.5 text-[11px] font-bold rounded-full bg-white/5 text-slate-400 border border-white/10 hover:text-white transition"
+          className="shrink-0 h-8 px-3 text-[11px] font-bold rounded-full bg-white/5 text-slate-400 border border-white/10 hover:text-white transition"
           title="Chatni Markdown fayl sifatida yuklab olish"
         >
           ⬇ Export
@@ -711,16 +712,23 @@ const ChatView: React.FC<ChatViewProps> = ({
                 />
               </svg>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl md:text-3xl font-black text-white">
-                SuperAI Yordamchisi
+            <div className="space-y-3">
+              <h3
+                className="font-black text-white tracking-tight"
+                style={{ fontSize: "clamp(1.625rem, 2vw + 1rem, 2.75rem)", lineHeight: 1.15 }}
+              >
+                Salom! 👋
+                <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                  Aivora AI
+                </span>{" "}
+                sizga qanday yordam bera oladi?
               </h3>
-              <p className="max-w-md text-slate-400 text-sm font-medium">
-                ChatGPT va DeepSeek darajasidagi mantiq va tezlik. Savol bering,
-                matn yoki rasm tahlil qiling.
+              <p className="mx-auto max-w-md text-slate-400 text-sm md:text-[15px] font-medium">
+                Savol bering, matn yoki rasm tahlil qiling.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-md pt-4">
               {[
                 "O'zbek tilida she'r yoz",
                 "Python koddagi xatoni top",
@@ -730,9 +738,12 @@ const ChatView: React.FC<ChatViewProps> = ({
                 <button
                   key={hint}
                   onClick={() => setInput(hint)}
-                  className="p-3 text-xs font-bold text-slate-300 bg-slate-800/60 border border-white/5 rounded-xl hover:bg-slate-700 hover:text-white transition text-left"
+                  className="flex items-center gap-2.5 px-3.5 h-[52px] w-full text-xs sm:text-[13px] font-bold text-slate-300 bg-slate-800/50 border border-white/5 rounded-xl hover:bg-slate-700/70 hover:text-white hover:border-white/10 transition text-left"
                 >
-                  💡 {hint}
+                  <span className="text-base shrink-0" aria-hidden="true">
+                    💡
+                  </span>
+                  <span className="truncate min-w-0">{hint}</span>
                 </button>
               ))}
             </div>
@@ -929,15 +940,12 @@ const ChatView: React.FC<ChatViewProps> = ({
         )}
       </div>
 
-      {/* Input Area — flex oqimida, xabarlar ustiga chiqmaydi */}
-      <div className="shrink-0 px-4 pt-2 pb-20 md:px-10 md:pb-6">
-        <div className="glass p-2.5 md:p-3 rounded-[2.5rem] shadow-2xl border-white/10">
-          <form
-            onSubmit={handleSendMessage}
-            className="flex flex-col space-y-2"
-          >
+      {/* Input Area — Aivora AI premium composer */}
+      <div className="shrink-0 px-3 md:px-10 pt-2 pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-6">
+        <form onSubmit={handleSendMessage} className="composer-shell">
+          <div className="ai-composer rounded-[1.25rem]">
             {selectedImage && (
-              <div className="relative inline-block w-20 h-20 ml-4 mt-2">
+              <div className="relative inline-block w-20 h-20 ml-2.5 mt-2">
                 <img
                   src={selectedImage}
                   className="w-full h-full object-cover rounded-2xl border-2 border-blue-500 shadow-xl"
@@ -960,7 +968,7 @@ const ChatView: React.FC<ChatViewProps> = ({
               </div>
             )}
             {selectedFile && (
-              <div className="flex items-center gap-2 mx-4 mt-2 px-3 py-2 bg-blue-600/20 border border-blue-500/30 rounded-xl w-fit max-w-full">
+              <div className="flex items-center gap-2 mx-2.5 mt-2 px-3 py-1.5 bg-blue-600/20 border border-blue-500/30 rounded-xl w-fit max-w-full">
                 <span className="text-lg">📄</span>
                 <span className="text-xs font-bold text-blue-200 truncate max-w-[200px]">
                   {selectedFile.name}
@@ -975,61 +983,74 @@ const ChatView: React.FC<ChatViewProps> = ({
                 </button>
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 px-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-3 text-slate-400 hover:text-blue-400 hover:bg-blue-600/10 rounded-full transition-all"
-                title="Rasm yuklash"
-                aria-label="Rasm yuklash"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <div className="flex items-center gap-1.5 p-1.5">
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setToolsOpen((v) => !v)}
+                  className={`w-10 h-10 rounded-xl inline-flex items-center justify-center transition ${
+                    toolsOpen
+                      ? "bg-slate-700/60 text-white"
+                      : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                  }`}
+                  aria-label="Qo'shimcha vositalar"
+                  title="Vositalar (kod, export, promptlar)"
                 >
-                  <path
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </button>
-              <input
-                type="file"
-                className="hidden"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-              <button
-                type="button"
-                onClick={() => codeFileInputRef.current?.click()}
-                className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-emerald-600/10 rounded-full transition-all"
-                title="Kod fayl yuklash (.js, .py, .html...)"
-                aria-label="Kod fayl yuklash"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <input
-                type="file"
-                className="hidden"
-                ref={codeFileInputRef}
-                accept=".js,.jsx,.ts,.tsx,.py,.html,.css,.json,.java,.cpp,.c,.cs,.php,.rb,.go,.rs,.sql,.sh,.txt,.md,.xml,.yml,.yaml"
-                onChange={handleCodeFileUpload}
-              />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </button>
+                {toolsOpen && (
+                  <div
+                    className="absolute bottom-[calc(100%+0.5rem)] left-0 w-56 glass rounded-2xl border border-white/10 shadow-2xl p-1.5 z-30"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        codeFileInputRef.current?.click();
+                        setToolsOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                    >
+                      <span className="text-base" aria-hidden="true">💻</span>
+                      <span>Kod fayl yuklash</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportChat("md");
+                        setToolsOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                    >
+                      <span className="text-base" aria-hidden="true">📥</span>
+                      <span>Chatni eksport qilish</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPromptLib(true);
+                        setToolsOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                    >
+                      <span className="text-base" aria-hidden="true">📚</span>
+                      <span>Prompt kutubxonasi</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               <textarea
                 rows={1}
                 value={input}
@@ -1040,39 +1061,73 @@ const ChatView: React.FC<ChatViewProps> = ({
                     handleSendMessage();
                   }
                 }}
-                placeholder="Savol bering yoki rasm yuklang..."
+                placeholder="Xabaringizni yozing..."
                 aria-label="Xabar yozish"
-                className="flex-1 min-w-0 bg-transparent border-none outline-none text-slate-100 placeholder-slate-500 py-3.5 resize-none max-h-32 text-[16px] md:text-[15px] font-medium"
+                className="flex-1 min-w-0 bg-transparent border-none outline-none text-slate-100 placeholder-slate-500 py-2.5 resize-none max-h-32 text-[16px] md:text-[15px] font-medium"
+              />
+              <input
+                type="file"
+                className="hidden"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+              <input
+                type="file"
+                className="hidden"
+                ref={codeFileInputRef}
+                accept=".js,.jsx,.ts,.tsx,.py,.html,.css,.json,.java,.cpp,.c,.cs,.php,.rb,.go,.rs,.sql,.sh,.txt,.md,.xml,.yml,.yaml"
+                onChange={handleCodeFileUpload}
               />
               <button
-                type="button"
-                onClick={() => setWebSearchEnabled((prev) => !prev)}
-                title={
-                  webSearchEnabled
-                    ? "Internetdan qidirish (Faol)"
-                    : "Internetdan qidirishni yoqish"
+                type="submit"
+                disabled={
+                  isLoading ||
+                  (!input.trim() && !selectedImage && !selectedFile)
                 }
-                aria-label="Internetdan qidirish"
-                className={`p-2.5 rounded-xl transition-all ${
-                  webSearchEnabled
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                    : "text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+                aria-label={isLoading ? "Javob kutilmoqda" : "Xabar yuborish"}
+                className={`composer-send shrink-0 ${
+                  isLoading ||
+                  (!input.trim() && !selectedImage && !selectedFile)
+                    ? "bg-slate-800 text-slate-600"
+                    : "bg-blue-600 text-white hover:bg-blue-500"
                 }`}
               >
-                <span className="text-sm">🌐</span>
+                <svg
+                  className="w-[18px] h-[18px]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M5 12h14M12 5l7 7-7 7"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
-              <select
-                value={modelProvider}
-                onChange={(event) =>
-                  setModelProvider(event.target.value as "gemini" | "claude")
-                }
-                className="shrink-0 rounded-xl border border-white/10 bg-slate-800 px-2 py-2 text-[11px] font-bold text-slate-200 outline-none focus:border-blue-400"
-                title="AI modelini tanlang"
-                aria-label="AI modelini tanlang"
+            </div>
+              <div className="flex items-center gap-1 px-3 pb-2.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="composer-tool"
+                title="Rasm yuklash"
+                aria-label="Rasm yuklash"
               >
-                <option value="gemini">Gemini</option>
-                <option value="claude">Claude</option>
-              </select>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </button>
               <button
                 type="button"
                 onClick={toggleMic}
@@ -1084,14 +1139,10 @@ const ChatView: React.FC<ChatViewProps> = ({
                     ? "Ovozli kiritishni to'xtatish"
                     : "Ovozli kiritish"
                 }
-                className={`p-3 rounded-full transition-all ${
-                  isListening
-                    ? "bg-red-600 text-white animate-pulse shadow-lg shadow-red-900/40"
-                    : "text-slate-400 hover:text-red-400 hover:bg-red-600/10"
-                }`}
+                className={`composer-tool ${isListening ? "is-listening" : ""}`}
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1105,36 +1156,34 @@ const ChatView: React.FC<ChatViewProps> = ({
                 </svg>
               </button>
               <button
-                type="submit"
-                disabled={
-                  isLoading ||
-                  (!input.trim() && !selectedImage && !selectedFile)
+                type="button"
+                onClick={() => setWebSearchEnabled((prev) => !prev)}
+                title={
+                  webSearchEnabled
+                    ? "Internetdan qidirish (Faol)"
+                    : "Internetdan qidirishni yoqish"
                 }
-                aria-label={isLoading ? "Javob kutilmoqda" : "Xabar yuborish"}
-                className={`p-3.5 rounded-full transition-all transform active:scale-90 ${
-                  isLoading ||
-                  (!input.trim() && !selectedImage && !selectedFile)
-                    ? "bg-slate-800 text-slate-600"
-                    : "bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-900/40"
-                }`}
+                aria-label="Internetdan qidirish"
+                className={`composer-tool ${webSearchEnabled ? "is-active" : ""}`}
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M5 12h14M12 5l7 7-7 7"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <span className="text-sm leading-none">🌐</span>
               </button>
+              <div className="flex-1" />
+              <select
+                value={modelProvider}
+                onChange={(event) =>
+                  setModelProvider(event.target.value as "gemini" | "claude")
+                }
+                className="shrink-0 h-8 max-w-[7.5rem] rounded-lg border border-white/10 bg-white/5 px-2 text-[11px] font-bold text-slate-300 outline-none focus:border-blue-400"
+                title="AI modelini tanlang"
+                aria-label="AI modelini tanlang"
+              >
+                <option value="gemini">Gemini</option>
+                <option value="claude">Claude</option>
+              </select>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
       {/* Prompt kutubxonasi */}
       {showPromptLib && (
